@@ -1,36 +1,86 @@
-from flask import Blueprint, jsonify
-from EasyG import db
+from flask import Blueprint, jsonify, request
+from EasyG.concept import Concept
 
 bp = Blueprint('graph', __name__, url_prefix='/graph')
 
 
-def build_nodes(node):
-    data = {"name": node['name'], "label": node['label']}
-    return data
+def build_nodes(concept: Concept):
+    data = {'id': concept.__primaryvalue__, 'name': concept.name, 'brief': concept.brief, 'content': concept.content}
+    return {'data': data}
 
 
-def build_edges(relationship):
-    if relationship.start_node:
-        print(relationship.start_node)
-    if relationship.end_node:
-        print(relationship.end_node)
-    if relationship.type:
-        print(relationship.type)
-    data = {"source": relationship.start_node['name'],
-            "target": relationship.end_node['name'],
-            "relationship": relationship.type}
-    return data
+def build_edges(concept):
+    ret = []
+    for ccp in concept.relates:
+        data = {
+            'source': concept.__primaryvalue__,
+            'target': ccp.__primaryvalue__,
+            'relationship': ''
+        }
+        ret.append({
+            'data': data
+        })
+    return ret
 
 
 @bp.route('/', methods=['GET'])
-def get_graph():
-    gra = db.get_db()
-    nodes = list(map(build_nodes, gra.nodes.match()))
-    edges = list(map(build_edges, gra.relationships.match()))
-    # edges=[]
-    # # nodes = gra.nodes.match()
-    # edges = gra.relationships.match()
-    for o in edges:
-        i = 11
-        print(o)
+def get_list():
+    concepts = Concept.get_list()
+    nodes = []
+    edges = []
+
+    for concept in concepts:
+        nodes.append(build_nodes(concept))
+        edges += build_edges(concept)
+
     return jsonify(elements={"nodes": nodes, "edges": edges})
+
+
+@bp.route('/concepts/<id_>', methods=['GET'])
+def get_concepts(id_):
+    return jsonify(Concept.get_node(id_))
+
+
+@bp.route('/concepts', methods=['POST'])
+def add_concept():
+    data = request.json
+    c = Concept()
+    c.name = data['name']
+    c.brief = data['brief']
+    c.content = data['content']
+    if data['source_id']:
+        from_ = Concept.get_node(data['source_id'])
+        from_.relates.add(c)
+        return jsonify(build_nodes(Concept.upsert(from_)))
+    return jsonify(build_nodes(Concept.upsert(c)))
+
+
+@bp.route('/concepts/<id_>', methods=['PUT'])
+def update_concept(id_):
+    data = request.json
+    c = Concept.get_node(id_)
+    c.name = data['name']
+    c.brief = data['brief']
+    c.content = data['content']
+    return jsonify(build_nodes(Concept.upsert(c)))
+
+
+@bp.route('/concepts/<id_>', methods=['DELETE'])
+def del_concept(id_):
+    return jsonify(Concept.delete(id_))
+
+
+@bp.route('/relations', methods=['POST'])
+def add_relations():
+    from_ = Concept.get_node(request.args.get('source_id'))
+    to = Concept.get_node(request.args.get('target_id'))
+    from_.relates.add(to)
+    return jsonify(build_nodes(Concept.upsert(from_)))
+
+
+@bp.route('/relations', methods=['DELETE'])
+def del_relations():
+    from_ = Concept.get_node(request.args.get('source_id'))
+    to = Concept.get_node(request.args.get('target_id'))
+    from_.relates.remove(to)
+    return jsonify(build_nodes(Concept.upsert(from_)))

@@ -1,6 +1,7 @@
 import os
 
-from flask import Flask
+from flask import Flask, g
+from flask_cors import CORS
 
 
 def create_app(test_config=None):
@@ -20,7 +21,13 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from . import graph
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
+    from . import graph, db
     app.register_blueprint(graph.bp)
+
+    @app.before_request
+    def before_request():
+        g.db = db.get_db()
 
     return app

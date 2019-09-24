@@ -1,32 +1,9 @@
-from py2neo import Graph, Node, Relationship
-from py2neo.ogm import GraphObject
-
-from flask import g
+from py2neo import Graph
+from flask import g, current_app
 
 
 def get_db():
     if 'db' not in g:
-        g.db = Graph('http://182.254.156.112:7474', username='neo4j', password='root1234')
+        g.db = Graph(current_app.config['DB_URL'], username=current_app.config['DB_NAME'],
+                     password=current_app.config['DB_PWD'])
     return g.db
-
-
-def push_node(node):
-    if isinstance(node, GraphObject):
-        return get_db().push(node)
-
-
-def get_node(node):
-    if isinstance(node, GraphObject):
-        return node.match(get_db()).first()
-
-
-def del_node():
-    pass
-
-
-def update_edges():
-    pass
-
-
-def walk():
-    pass

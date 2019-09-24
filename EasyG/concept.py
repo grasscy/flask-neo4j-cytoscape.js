@@ -1,40 +1,31 @@
 from py2neo.ogm import GraphObject, Property, RelatedTo
-from EasyG import db
+from flask import g
 
 
 class Concept(GraphObject):
     name = Property()
+    brief = Property()
+    content = Property()
+
     relates = RelatedTo('Concept')
 
-    def add(self):
-        return db.push_node(self)
+    @staticmethod
+    def delete(id_: int):
+        concept = Concept.get_node(id_)
+        return g.db.delete(concept)
 
-    def delete(self):
-        return db.del_node(self)
-
-    def update(self):
-        return db.push_node(self);
+    @staticmethod
+    def upsert(concept):
+        g.db.push(concept)
+        return concept
 
     def walk(self):
-        return db.walk(self)
+        pass
 
+    @staticmethod
+    def get_list():
+        return list(Concept.match(g.db))
 
-#
-# from py2neo import Graph, Node, Relationship
-#
-# ##连接neo4j数据库，输入地址、用户名、密码
-graph = Graph('http://182.254.156.112:7474', username='neo4j', password='root1234')
-# # tx = graph.begin()
-# # c1 = Concept()
-# # c1.name = 'hw'
-# # tx.create(c1)
-# #
-# # tx.commit()
-# rs = Concept.match(graph).first()
-# print(rs)
-
-
-from EasyG.concept import Concept
-
-c1 = Concept()
-db.push_node(c1)
+    @staticmethod
+    def get_node(id_: int):
+        return Concept.match(g.db, int(id_)).first()
