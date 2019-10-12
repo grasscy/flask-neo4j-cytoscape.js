@@ -1,0 +1,15 @@
+version: '3'
+services:
+  visual-gragh:
+    image: visual-gragh:latest
+    volumes:
+      - ./app:/app
+      - ./instance:/app/instance
+      - ./static:/app/static
+    ports:
+      - "80:80"
+      - "5000:5000"
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_DEBUG=0
+      - 'RUN=flask run --host=0.0.0.0 --port=5000'

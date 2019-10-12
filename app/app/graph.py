@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from EasyG.concept import Concept
+from app.app.concept import Concept
 
 bp = Blueprint('graph', __name__, url_prefix='/graph')
 
