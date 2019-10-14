@@ -60,6 +60,21 @@
         <el-button @click="dialogUpdateVisible = false">取 消</el-button>
         <el-button type="primary" @click="update_concept">确 定</el-button>
     </el-dialog>
+
+    <el-dialog
+            title="标签"
+            :visible.sync="dialogLabelVisible"
+            width="30%">
+        <el-form :model="form">
+            <el-form-item label="名称" :label-width="formLabelWidth">
+                <el-input v-model="label"></el-input>
+            </el-form-item>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer"></span>
+        <el-button @click="dialogLabelVisible = false">取 消</el-button>
+        <el-button type="primary" @click="update_label">确 定</el-button>
+    </el-dialog>
 </div>
 
 </body>

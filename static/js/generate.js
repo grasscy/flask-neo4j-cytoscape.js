@@ -4,6 +4,25 @@ document.addEventListener('DOMContentLoaded', function () {
     };
     axios.defaults.baseURL = 'http://127.0.0.1:5000'
 
+    axios.interceptors.request.use(
+        config => {
+            // // 默认参数设置：所有接口都必须传的值（比如：userId）
+            // let defaultParams = {
+            //     userId: store.state.userId
+            // }
+            // 自定义header信息（比如token）
+            if (store.state.label == null) {
+                dialogLabelVisible = true
+            }
+            config.headers['Label'] = store.state.label;
+            // 默认值与接口传来的参数进行合并（注：接口参数与默认值不可重复）
+            config.data = Object.assign(defaultParams, config.data);
+            return config;
+        }, function (error) {
+            // 对请求错误做些什么
+            return Promise.reject(error);
+        })
+
     function click_action(node) {
         app.name = node.data('name')
         app.brief = node.data('brief')
@@ -219,8 +238,10 @@ document.addEventListener('DOMContentLoaded', function () {
             content: '',
             source_id: '',
             target_id: '',
+            label: '',
             dialogAddVisible: false,
             dialogUpdateVisible: false,
+            dialogLabelVisible: false,
             form: {
                 name: '',
                 brief: '',
@@ -280,6 +301,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 }).catch(function (error) {
                     console.log(error)
                 });
+            },
+            update_label() {
+                this.dialogLabelVisible = false
+                store.state.label = this.label
             }
         }
     })
