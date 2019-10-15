@@ -6,20 +6,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     axios.interceptors.request.use(
         config => {
-            // // 默认参数设置：所有接口都必须传的值（比如：userId）
-            // let defaultParams = {
-            //     userId: store.state.userId
-            // }
-            // 自定义header信息（比如token）
-            if (store.state.label == null) {
-                dialogLabelVisible = true
+            if (!app.label) {
+                app.dialogLabelVisible = true
             }
-            config.headers['Label'] = store.state.label;
-            // 默认值与接口传来的参数进行合并（注：接口参数与默认值不可重复）
-            config.data = Object.assign(defaultParams, config.data);
+            console.log(app.label)
+            config.headers['Label'] = app.label;
             return config;
         }, function (error) {
-            // 对请求错误做些什么
             return Promise.reject(error);
         })
 
@@ -69,165 +62,167 @@ document.addEventListener('DOMContentLoaded', function () {
             sticky: true,
         });
 
-    };
+    }
 
-    axios.get('/graph/')
-        .then(function (response) {
-            console.log(response.data.elements)
-            let cy = window.cy = cytoscape({
-                container: document.getElementById('cy'),
-                style: [
-                    {
-                        selector: 'node',
-                        css: {'background-color': '#6FB1FC', 'content': 'data(name)'}
-                    },
-                    {
-                        selector: 'edge',
-                        css: {'content': 'data(relationship)', 'target-arrow-shape': 'triangle'}
-                    },
-                    {
-                        selector: "node:selected",
-                        style: {
-                            "border-width": "6px",
-                            "border-color": "#AAD8FF",
-                            "border-opacity": "0.5",
-                            "background-color": "#77828C",
-                            "text-outline-color": "#77828C"
-                        }
-                    }
-                ],
-                elements: response.data.elements,
-                layout: {name: 'cose'}
-            });
-
-            cy.nodes().on('click', function (e) {
-                click_action(e.target);
-            });
-
-
-            cy.nodes().forEach(function (node) {
-                init_mouse(node);
-            });
-
-
-            cy.cxtmenu({
-                selector: 'node',
-                commands: [
-                    {
-                        content: '删除',
-                        select: function (ele) {
-                            axios({
-                                method: 'delete',
-                                url: '/graph/concepts/' + ele.id(),
-                            }).then(function (response) {
-                                cy.remove(ele)
-                            }).catch(function (error) {
-                                console.log(error)
-                            });
-                        }
-                    },
-                    {
-                        content: '关系到',
-                        select: function (ele) {
-                            app.source_id = ele.id()
-                            ele.select()
+    function get_graph() {
+        axios.get('/graph/')
+            .then(function (response) {
+                console.log(response.data.elements)
+                let cy = window.cy = cytoscape({
+                    container: document.getElementById('cy'),
+                    style: [
+                        {
+                            selector: 'node',
+                            css: {'background-color': '#6FB1FC', 'content': 'data(name)'}
                         },
-                    },
-                    {
-                        content: '添加',
-                        select: function (ele) {
-                            window.oncontextmenu = function (e) {
-                                e.preventDefault();
+                        {
+                            selector: 'edge',
+                            css: {'content': 'data(relationship)', 'target-arrow-shape': 'triangle'}
+                        },
+                        {
+                            selector: "node:selected",
+                            style: {
+                                "border-width": "6px",
+                                "border-color": "#AAD8FF",
+                                "border-opacity": "0.5",
+                                "background-color": "#77828C",
+                                "text-outline-color": "#77828C"
                             }
-                            app.source_id = ele.id()
-                            app.dialogAddVisible = true
-                        },
-                    },
-                    {
-                        content: '修改',
-                        select: function (ele) {
-                            window.oncontextmenu = function (e) {
-                                e.preventDefault();
-                            }
-                            app.id = ele.id()
-                            app.form.name = ele.data().name
-                            app.form.brief = ele.data().brief
-                            app.form.content = ele.data().content
-                            app.dialogUpdateVisible = true
                         }
-                    }
-                ],
-                menuRadius: 70,
-                activePadding: 10, // additional size in pixels for the active command
-            })
+                    ],
+                    elements: response.data.elements,
+                    layout: {name: 'cose'}
+                });
 
-            cy.cxtmenu({
-                selector: 'core',
-                commands: [
-                    {
-                        content: '<span class="fa fa-star fa-2x"></span>',
-                        // select: function () {
-                        //     console.log('bg1');
-                        // },
-                        enabled: false
-                    },
-                    {
-                        content: '添加',
-                        select: function () {
-                            window.oncontextmenu = function (e) {
-                                //取消默认的浏览器自带右键 很重要！！
-                                e.preventDefault();
+                cy.nodes().on('click', function (e) {
+                    click_action(e.target);
+                });
+
+
+                cy.nodes().forEach(function (node) {
+                    init_mouse(node);
+                });
+
+
+                cy.cxtmenu({
+                    selector: 'node',
+                    commands: [
+                        {
+                            content: '删除',
+                            select: function (ele) {
+                                axios({
+                                    method: 'delete',
+                                    url: '/graph/concepts/' + ele.id(),
+                                }).then(function (response) {
+                                    cy.remove(ele)
+                                }).catch(function (error) {
+                                    console.log(error)
+                                });
                             }
-                            app.dialogAddVisible = true
                         },
-                    },
-
-                ],
-                menuRadius: 30,
-                activePadding: 5, // additional size in pixels for the active command
-                indicatorSize: 0, // the size in pixels of the pointer to the active command
-                separatorWidth: 2, // the empty spacing in pixels between successive commands
-                spotlightPadding: 4, // extra spacing in pixels between the element and the spotlight
-                minSpotlightRadius: 2, // the minimum radius in pixels of the spotlight
-                maxSpotlightRadius: 30, // the maximum radius in pixels of the spotlight
-            })
-
-            cy.cxtmenu({
-                selector: 'edge',
-                commands: [
-                    {
-                        content: '删除',
-                        select: function (ele) {
-                            axios({
-                                method: 'delete',
-                                url: '/graph/relations?source_id=' + ele.source().id() + '&target_id=' + ele.target().id(),
-                            }).then(function (response) {
-                                cy.remove(ele)
-                            }).catch(function (error) {
-                                console.log(error)
-                            });
+                        {
+                            content: '关系到',
+                            select: function (ele) {
+                                app.source_id = ele.id()
+                                ele.select()
+                            },
                         },
-                    },
-                    {
-                        content: '<span class="fa fa-star fa-2x"></span>',
-                        enabled: false
-                    },
+                        {
+                            content: '添加',
+                            select: function (ele) {
+                                window.oncontextmenu = function (e) {
+                                    e.preventDefault();
+                                }
+                                app.source_id = ele.id()
+                                app.dialogAddVisible = true
+                            },
+                        },
+                        {
+                            content: '修改',
+                            select: function (ele) {
+                                window.oncontextmenu = function (e) {
+                                    e.preventDefault();
+                                }
+                                app.id = ele.id()
+                                app.form.name = ele.data().name
+                                app.form.brief = ele.data().brief
+                                app.form.content = ele.data().content
+                                app.dialogUpdateVisible = true
+                            }
+                        }
+                    ],
+                    menuRadius: 70,
+                    activePadding: 10, // additional size in pixels for the active command
+                })
 
-                ],
-                menuRadius: 30,
-                activePadding: 5, // additional size in pixels for the active command
-                indicatorSize: 0, // the size in pixels of the pointer to the active command
-                separatorWidth: 2, // the empty spacing in pixels between successive commands
-                spotlightPadding: 4, // extra spacing in pixels between the element and the spotlight
-                minSpotlightRadius: 2, // the minimum radius in pixels of the spotlight
-                maxSpotlightRadius: 30, // the maximum radius in pixels of the spotlight
+                cy.cxtmenu({
+                    selector: 'core',
+                    commands: [
+                        {
+                            content: '<span class="fa fa-star fa-2x"></span>',
+                            // select: function () {
+                            //     console.log('bg1');
+                            // },
+                            enabled: false
+                        },
+                        {
+                            content: '添加',
+                            select: function () {
+                                window.oncontextmenu = function (e) {
+                                    //取消默认的浏览器自带右键 很重要！！
+                                    e.preventDefault();
+                                }
+                                app.dialogAddVisible = true
+                            },
+                        },
+
+                    ],
+                    menuRadius: 30,
+                    activePadding: 5, // additional size in pixels for the active command
+                    indicatorSize: 0, // the size in pixels of the pointer to the active command
+                    separatorWidth: 2, // the empty spacing in pixels between successive commands
+                    spotlightPadding: 4, // extra spacing in pixels between the element and the spotlight
+                    minSpotlightRadius: 2, // the minimum radius in pixels of the spotlight
+                    maxSpotlightRadius: 30, // the maximum radius in pixels of the spotlight
+                })
+
+                cy.cxtmenu({
+                    selector: 'edge',
+                    commands: [
+                        {
+                            content: '删除',
+                            select: function (ele) {
+                                axios({
+                                    method: 'delete',
+                                    url: '/graph/relations?source_id=' + ele.source().id() + '&target_id=' + ele.target().id(),
+                                }).then(function (response) {
+                                    cy.remove(ele)
+                                }).catch(function (error) {
+                                    console.log(error)
+                                });
+                            },
+                        },
+                        {
+                            content: '<span class="fa fa-star fa-2x"></span>',
+                            enabled: false
+                        },
+
+                    ],
+                    menuRadius: 30,
+                    activePadding: 5, // additional size in pixels for the active command
+                    indicatorSize: 0, // the size in pixels of the pointer to the active command
+                    separatorWidth: 2, // the empty spacing in pixels between successive commands
+                    spotlightPadding: 4, // extra spacing in pixels between the element and the spotlight
+                    minSpotlightRadius: 2, // the minimum radius in pixels of the spotlight
+                    maxSpotlightRadius: 30, // the maximum radius in pixels of the spotlight
+                })
+
+
             })
-
-
-        })
-        .catch(function (error) {
-            console.log(error)
-        });
+            .catch(function (error) {
+                console.log(error)
+            });
+    }
 
     let app = new Vue({
         el: '#concept',
@@ -304,8 +299,12 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             update_label() {
                 this.dialogLabelVisible = false
-                store.state.label = this.label
+                get_graph()
             }
         }
     })
+
+
+    app.dialogLabelVisible = true
+
 })

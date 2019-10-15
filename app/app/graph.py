@@ -1,31 +1,17 @@
-from flask import Blueprint, jsonify, request
-from app.app.concept import Concept
+from flask import Blueprint, jsonify, request, g
+from .concept import Concept
 
 bp = Blueprint('graph', __name__, url_prefix='/graph')
 
 
-def build_nodes(concept: Concept):
-    data = {'id': concept.__primaryvalue__, 'name': concept.name, 'brief': concept.brief, 'content': concept.content}
-    return {'data': data}
-
-
-def build_edges(concept):
-    ret = []
-    for ccp in concept.relates:
-        data = {
-            'source': concept.__primaryvalue__,
-            'target': ccp.__primaryvalue__,
-            'relationship': ''
-        }
-        ret.append({
-            'data': data
-        })
-    return ret
+@bp.before_request
+def get_label():
+    g.label = request.headers.get('label')
 
 
 @bp.route('/', methods=['GET'])
 def get_list():
-    concepts = Concept.get_list()
+    concepts = Concept.get_list(g.label)
     nodes = []
     edges = []
 
@@ -48,9 +34,11 @@ def add_concept():
     c.name = data['name']
     c.brief = data['brief']
     c.content = data['content']
+    c.label = g.label
     if data['source_id']:
         from_ = Concept.get_node(data['source_id'])
         from_.relates.add(c)
+        from_.label = g.label
         return jsonify(build_nodes(Concept.upsert(from_)))
     return jsonify(build_nodes(Concept.upsert(c)))
 
@@ -84,3 +72,22 @@ def del_relations():
     to = Concept.get_node(request.args.get('target_id'))
     from_.relates.remove(to)
     return jsonify(build_nodes(Concept.upsert(from_)))
+
+
+def build_nodes(concept: Concept):
+    data = {'id': concept.__primaryvalue__, 'name': concept.name, 'brief': concept.brief, 'content': concept.content}
+    return {'data': data}
+
+
+def build_edges(concept):
+    ret = []
+    for ccp in concept.relates:
+        data = {
+            'source': concept.__primaryvalue__,
+            'target': ccp.__primaryvalue__,
+            'relationship': ''
+        }
+        ret.append({
+            'data': data
+        })
+    return ret
