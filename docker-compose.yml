@@ -1,7 +1,7 @@
 version: '3'
 services:
   visual-gragh:
-    image: visual-gragh:latest
+    build: .
     volumes:
       - ./app:/app
       - ./instance:/app/instance
