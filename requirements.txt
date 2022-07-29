@@ -7,7 +7,7 @@ itsdangerous==1.1.0
 Jinja2==2.10.1
 jsonschema==2.6.0
 MarkupSafe==1.1.1
-mistune==0.8.4
+mistune==2.0.3
 neobolt==1.7.13
 neotime==1.7.4
 prompt-toolkit==2.0.9
